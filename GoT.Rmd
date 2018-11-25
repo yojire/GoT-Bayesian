@@ -1,0 +1,82 @@
+---
+title: "GoT"
+author: "Ruikun Xiao"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+```
+
+```{r}
+pacman::p_load(readr, data.table, tidyverse)
+deaths = read_csv("character-deaths.csv")
+deaths$`Book of Death`[157]=2
+predictions = read_csv("character-predictions.csv")
+deaths = data.table(deaths)
+predictions = data.table(predictions)
+colnames(deaths)[1]="name"
+setkey(deaths, name)
+setkey(predictions, name)
+merged = merge(deaths, predictions)
+```
+
+```{r}
+
+length(deaths$Name)
+length(predictions$name)
+```
+
+```{r}
+
+key(predictions)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
