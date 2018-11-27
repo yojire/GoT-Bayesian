@@ -50,15 +50,16 @@ gd_ck = function(name){
 ls_gd = as.integer(sapply(merged$name, gd_ck))
 
 fixed_gd = ifelse(merged$Gender==merged$male, merged$Gender, ls_gd)
+
+merged = cbind(merged, gender=fixed_gd)
 ```
-
-
-
 
 
 ```{r}
-merged[is.na(fixed_gd), .(name,Gender,male)]
+save(merged, file="merged.Rdata")
 ```
+
+
 
 
 
