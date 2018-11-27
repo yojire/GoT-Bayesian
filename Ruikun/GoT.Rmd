@@ -44,7 +44,10 @@ fixed_gd = ifelse(merged$Gender==merged$male, merged$Gender, ls_gd)
 ```
 
 ```{r}
-with(merged[name=="Alerie Hightower"], Gender==male)
+merged[name%in%c("Aggo","Del","Garth of Oldtown","Hamish the Harper","Luke of Longtown","Monster","Owen Norrey","Squint","Ulf the Ill","Wat (orphan)","Wat (sailor)","Will (orphan)","Wyl (guard)")]$Gender=1
+merged[name%in%c("Aggo","Del","Garth of Oldtown","Hamish the Harper","Luke of Longtown","Monster","Owen Norrey","Squint","Ulf the Ill","Wat (orphan)","Wat (sailor)","Will (orphan)","Wyl (guard)")]$male=1
+merged[name%in%c("Joyeuse Erenford")]$Gender=0
+merged[name%in%c("Joyeuse Erenford")]$male=0
 ```
 
 
