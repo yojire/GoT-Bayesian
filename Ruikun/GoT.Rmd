@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ```
 
 ```{r}
-pacman::p_load(readr, data.table, tidyverse, readxl)
+pacman::p_load(readr, data.table, tidyverse, readxl, rvest)
 deaths = read_csv("character-deaths.csv")
 deaths$`Book of Death`[157]=2
 predictions = read_csv("character-predictions.csv")
@@ -53,6 +53,23 @@ fixed_gd = ifelse(merged$Gender==merged$male, merged$Gender, ls_gd)
 
 merged = cbind(merged, gender=fixed_gd)
 ```
+
+```{r}
+nb_ck = function(name){
+  loc = grep(name, charlist$Character)
+  nb = unique(!is.na(charlist$Title[loc]))
+  if(length(nb)!=1) return(NA)
+  return(as.integer(nb))
+}
+
+ls_nb = sapply(merged$name, nb_ck)
+
+merged$Nobility[ls_nb==1]=1
+merged$isNoble[ls_nb==1]=1
+```
+
+
+
 
 
 ```{r}
