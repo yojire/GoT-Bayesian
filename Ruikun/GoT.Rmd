@@ -143,17 +143,54 @@ diffgd
 ```
 
 
+```{r}
+save(ls_noble, file="names_of_noble_characters.RData")
+```
+
+
+```{r}
+merged[Allegiances!=house, .(name, Allegiances, house)]
+```
 
 
 
+```{r}
+length(grep("House", merged$house))
+unique(merged$house[-grep("House", merged$house)])
+```
+
+```{r}
+houses = data.table(house_region)
+houses$Region = str_split(houses$Region, " \\(") %>%
+  lapply(head,1)%>%unlist()
+houses$Region = str_split(houses$Region, ";") %>%
+  lapply(head,1)%>%unlist()
+
+grephouse = function(h){
+  if(!grepl("House", h)) return(NA)
+  return(substring(h,7))
+}
+
+house2region = function(h){
+  h0 = grephouse(h)
+  if(is.na(h0)) return(NA)
+  if(grepl("of", h0)) return("Essos")
+  if(h0=="Nymeros Martell") h0 = "Martell"
+  matched = unique(houses[grep(h0,House),Region])
+  if(length(matched)!=1) return("more_than_1")
+  return(matched)
+}
+
+char_reg = sapply(merged$house, house2region)
+
+wreg = merged[char_reg=="more_than_1",.(name, house)]
+```
 
 
 
-
-
-
-
-
+```{r}
+save(char_reg, file="char_reg.RData")
+```
 
 
 
