@@ -1,17 +1,14 @@
 # Top ----
-setwd("/Users/sunyichi/Downloads/biostat 682/")
-#save.image("work_0416.RData")
+setwd("/Users/sunyichi/Documents/GitHub/GoT-Bayesian/")
 
-death <- read.csv("character-deaths.csv")
+load("datawithregion.RData")
+d <- read.csv("character-deaths.csv")
 require(randomForest)
 require(ggplot2)
 require(gridExtra)
 require(caret)
 library(MASS)
-# Data process----
-d <- death
-colnames(d)
-str(d)
+d=data
 
 # try classification ----
 set.seed(2017)
@@ -29,15 +26,12 @@ confusionMatrix(pdrf,as.factor(ts$DwD))
 data = d
 # Some of the data is wrong, fixes:
 # Cressen is intro'd and dies in book 2
-data$Book.of.Death[157] = 2
-# Shyra Errol Died in Book 3, did not appear
+data$`Book of Death`[147] = 2
 
-which(data$Name=="Shyra Errol")
 
-data[760,]
 # add on 1 to the death chapter number and intro chapter number, for prologues.
-data$Book.Intro.Chapter = data$Book.Intro.Chapter + 1
-data$Death.Chapter = data$Death.Chapter + 1
+data$`Book Intro Chapter` = data$`Book Intro Chapter` + 1
+data$`Death Chapter` = data$`Death Chapter` + 1
 
 
 # Make a book intro variable
@@ -55,7 +49,7 @@ data$Book.of.Intro[X4] = 4
 data$Book.of.Intro[X5] = 5
 
 # these are the characters that die in the same book they're introduced.
-Same_book_death = which(data$Book.of.Intro == data$Book.of.Death)
+Same_book_death = which(data$Book.of.Intro == data$`Book of Death`)
 Dies_same_book_1 = sum(data$Book.of.Intro[Same_book_death] == 1)
 Dies_same_book_2 = sum(data$Book.of.Intro[Same_book_death] == 2)
 Dies_same_book_3 = sum(data$Book.of.Intro[Same_book_death] == 3)
@@ -81,15 +75,15 @@ book4chap = 46
 book5chap = 73
 data$Chapters_featured = data$GoT*book1chap + data$CoK*book2chap + data$SoS*book3chap + data$FfC*book4chap + data$DwD*book5chap
 # subtract the chapters before a character appears in GoT
-data$Chapters_featured[X1] = data$Chapters_featured[X1] - data$Book.Intro.Chapter[X1] + 1
-data$Chapters_featured[X2] = data$Chapters_featured[X2] - data$Book.Intro.Chapter[X2] + 1 
-data$Chapters_featured[X3] = data$Chapters_featured[X3] - data$Book.Intro.Chapter[X3] + 1
-data$Chapters_featured[X4] = data$Chapters_featured[X4] - data$Book.Intro.Chapter[X4] + 1
-data$Chapters_featured[X5] = data$Chapters_featured[X5] - data$Book.Intro.Chapter[X5] + 1
+data$Chapters_featured[X1] = data$Chapters_featured[X1] - data$`Book Intro Chapter`[X1] + 1
+data$Chapters_featured[X2] = data$Chapters_featured[X2] - data$`Book Intro Chapter`[X2] + 1 
+data$Chapters_featured[X3] = data$Chapters_featured[X3] - data$`Book Intro Chapter`[X3] + 1
+data$Chapters_featured[X4] = data$Chapters_featured[X4] - data$`Book Intro Chapter`[X4] + 1
+data$Chapters_featured[X5] = data$Chapters_featured[X5] - data$`Book Intro Chapter`[X5] + 1
 
-data$Death.Chapter2 = data$Death.Chapter
-data$Death.Chapter2[is.na(data$Death.Chapter)] = 0
-Not_Dead = is.na(data$Death.Chapter)
+data$Death.Chapter2 = data$`Death Chapter`
+data$Death.Chapter2[is.na(data$`Death Chapter`)] = 0
+Not_Dead = is.na(data$`Death Chapter`)
 Isnt_Dead = sum(Not_Dead)
 #618 not dead yet
 
@@ -98,11 +92,11 @@ Isnt_Dead = sum(Not_Dead)
 
 data$In_Book = data$Chapters_featured
 
-D1 = which(data$Book.of.Death == 1 & !is.na(data$Death.Chapter))
-D2 = which(data$Book.of.Death == 2 & !is.na(data$Death.Chapter))
-D3 = which(data$Book.of.Death == 3 & !is.na(data$Death.Chapter))
-D4 = which(data$Book.of.Death == 4 & !is.na(data$Death.Chapter))
-D5 = which(data$Book.of.Death == 5 & !is.na(data$Death.Chapter))
+D1 = which(data$`Book of Death` == 1 & !is.na(data$`Death Chapter`))
+D2 = which(data$`Book of Death` == 2 & !is.na(data$`Death Chapter`))
+D3 = which(data$`Book of Death` == 3 & !is.na(data$`Death Chapter`))
+D4 = which(data$`Book of Death` == 4 & !is.na(data$`Death Chapter`))
+D5 = which(data$`Book of Death` == 5 & !is.na(data$`Death Chapter`))
 
 data$In_Book[D1] = data$Chapters_featured[D1] - (73 - data$Death.Chapter2[D1]) 
 data$In_Book[D2] = data$Chapters_featured[D2] - (70 - data$Death.Chapter2[D2])
@@ -115,6 +109,28 @@ data$Name[which(data$In_Book < 0)]
 hist(data$In_Book[-negative], breaks = 50, main = "Chapters Surviving in Book", xlab= "# of chapters")
 
 
+###chapters introduced 
+colnames(data)[6] <- "Book.Intro.Chapter"
+data$FirstAppearanceChap <- 0
+for(i in 1:nrow(data)){
+  if(data$Book.of.Intro[i]==1){
+    data$FirstAppearanceChap[i]=data$Book.Intro.Chapter[i]
+  }
+  if(data$Book.of.Intro[i]==2){
+    # 72 chapters in book 1
+    data$FirstAppearanceChap[i]=72 + data$Book.Intro.Chapter[i]
+  }
+  if(data$Book.of.Intro[i]==3){
+    # 69 chapters in book 2
+    data$FirstAppearanceChap[i]=72 + 69 + data$Book.Intro.Chapter[i]
+  }
+  if(data$Book.of.Intro[i]==3){
+    data$FirstAppearanceChap[i]=72 + 69 + 81 + data$Book.Intro.Chapter[i]
+  }
+  if(data$Book.of.Intro[i]==4){
+    data$FirstAppearanceChap[i]= 72 + 69 + 81 + 45 + data$Book.Intro.Chapter[i]
+  }
+}
 
 
 # simulate to show data follows weibull
@@ -151,4 +167,4 @@ p2 = ggplot(data.frame(x = data$In_Book),aes(x=x)) +
 
 grid.arrange(p1,p2,nrow=2)
 
-
+save.image("work_1201.RData")
