@@ -146,22 +146,18 @@ ll.weibull<-function(dat,par){
 }
 weibull.optim <- optim(par=c(log(1/2.2),12),fn=ll.weibull,dat=data$In_Book[-negative])
 
-#data$In_Book
 
 g = function(x){
-  return(dweibull(x,shape = 1,scale = 0.5))
+  return(dweibull(x,shape = 1.8,scale = 1.5))
 }
 ggplot(data.frame(x = data$In_Book),aes(x=x)) + 
-  geom_histogram(aes(y=..density..),binwidth=3) +
+  geom_histogram(aes(y=..density..),binwidth=1) +
   stat_function(fun = g, colour = "red",n=10000)+
-  ggtitle("density of Laplace: red-theo")+xlim(c(-7,7))
+  ggtitle("Density of Weibull with shape 1.75 and scale 1.5")+xlim(c(0,10))
 
 p1=ggplot(data.frame(x = data$In_Book),aes(x=x)) + 
-  geom_histogram(aes(y=..density..),binwidth=4) 
-
-
-p2 = ggplot(data.frame(x = data$In_Book),aes(x=x)) + 
-  geom_histogram(aes(y=..density..),binwidth=4) 
+  geom_histogram(aes(y=..density..),binwidth=4) +
+  ggtitle("Density of surviving chapters")
 
 
 
