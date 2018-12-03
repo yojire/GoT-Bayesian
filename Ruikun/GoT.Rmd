@@ -16,6 +16,7 @@ predictions = read_csv("character-predictions.csv")
 deaths = data.table(deaths)
 predictions = data.table(predictions)
 colnames(deaths)[1]="name"
+deaths = deaths[!(name=="Myles"&Allegiances=="House Tully")]
 setkey(deaths, name)
 setkey(predictions, name)
 merged = merge(deaths, predictions)
@@ -72,54 +73,6 @@ merged$isNoble[ls_nb==1]=1
 
 
 
-```{r}
-save(merged, file="merged.Rdata")
-```
-
-
-
-
-
-```{r}
-sum(is.na(merged$house))
-```
-
-```{r}
-summary(merged)
-deaths$Gender
-predictions$male
-```
-
-```{r}
-merged0 = data.frame(merged)[,sapply(merged, function(x)!any(is.na(x)))]
-merged0 = data.table(merged0)
-merged0$male=NULL
-```
-
-
-
-
-```{r}
-sapply(is.na)
-
-pacman::p_load(randomForest)
-randomForest(isAlive~., merged0)
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -143,14 +96,6 @@ diffgd
 ```
 
 
-```{r}
-save(ls_noble, file="names_of_noble_characters.RData")
-```
-
-
-```{r}
-merged[Allegiances!=house, .(name, Allegiances, house)]
-```
 
 
 
@@ -184,7 +129,77 @@ house2region = function(h){
 char_reg = sapply(merged$house, house2region)
 
 wreg = merged[char_reg=="more_than_1",.(name, house)]
+
+merged = cbind(merged, hs_reg=char_reg)
 ```
+
+
+```{r}
+house2regionlist = function(h){
+  h0 = grephouse(h)
+  if(is.na(h0)) return(NA)
+  if(grepl("of", h0)) return("Essos")
+  if(h0=="Nymeros Martell") h0 = "Martell"
+  matched = unique(houses[grep(h0,House),Region])
+  return(matched)
+}
+
+char_reg_ls = lapply(merged$house, house2regionlist)
+
+save(char_reg_ls, file="char_reg_ls.RData")
+```
+
+
+```{r}
+diffnb = merged[Nobility!=isNoble, .(name, Nobility, isNoble)]
+checknb = lapply(diffnb$name, grep, ls_noble)%>%lapply(length)%>%unlist()
+checknb2 = as.integer(diffnb$name%in%ls_noble)
+diffnb = cbind(diffnb, checknb, checknb2)
+diffnb[checknb!=checknb2]
+```
+
+```{r}
+samenb = merged[Nobility==isNoble, .(name, Nobility)]
+checknbs = lapply(samenb$name, grep, ls_noble)%>%lapply(length)%>%unlist()
+checknb2s = as.integer(samenb$name%in%ls_noble)
+samenb = cbind(samenb, checknbs, checknb2s)
+samenb[Nobility!=checknb2s&checknbs==0]
+```
+
+```{r}
+app_ls_nb = as.integer(merged$name%in%ls_noble)
+corrected_nobility = as.integer((merged$Nobility*merged$isNoble)|app_ls_nb)
+merged = cbind(merged, noble=corrected_nobility)
+```
+
+
+
+
+
+```{r}
+samenb[Nobility!=checknb2s&checknb2s!=0]
+```
+
+
+
+
+
+
+
+```{r}
+load("../data1201.RData")
+data = data[!(name=="Myles"&Allegiances=="House Tully")]
+data = cbind(data, noble = corrected_nobility)
+saveRDS(data, file="../updated_data.rds")
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -193,6 +208,10 @@ save(char_reg, file="char_reg.RData")
 ```
 
 
+
+```{r}
+save(merged, file="merged.Rdata")
+```
 
 
 
