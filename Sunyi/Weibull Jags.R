@@ -1,4 +1,5 @@
-
+setwd("/Users/sunyichi/Documents/GitHub/GoT-Bayesian/")
+data=readRDS("data1204.rds")
 require(rjags)
 
 prior_model_Weibull = "model{
@@ -14,7 +15,7 @@ lambda <- exp(-beta*pow(271,alpha))
 
 prior_model.con_W<-textConnection(prior_model_Weibull)
 
-In_Book_15 = as.integer(data$In_Book)
+data$In_Book_15 = as.integer(data$In_Book)
 N_15 = length(data$In_Book)
 jags15 = jags.model(prior_model.con_W, n.chains = 3, n.adapt = 200, data = list('In_Book' = In_Book_15, 'N' = N_15))
 sample15 = coda.samples(jags15, c("alpha","beta","theta", "lambda"), 10000)
