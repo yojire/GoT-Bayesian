@@ -1,0 +1,82 @@
+---
+title: "Untitled"
+author: "Ruikun Xiao"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+house_tables = read_html("https://awoiaf.westeros.org/index.php/List_of_houses") %>% html_table()
+
+houses = house_tables[[1]]
+```
+
+
+
+
+```{r}
+noble_url = c("https://awoiaf.westeros.org/index.php/Category:Nobles",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Charioteer#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Florent%2C+Omer%0AOmer+Florent#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Hammer+of+the+Hills#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Lonmouth%2C+Joffrey%0AJoffrey+Lonmouth#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Redfort%2C+Adrian%0AAdrian+Redfort#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Stonetree%2C+Sigfry%0ASigfry+Stonetree#mw-pages",
+              "https://awoiaf.westeros.org/index.php?title=Category:Nobles&pagefrom=Vance%2C+Jon%0AJon+Vance#mw-pages")
+
+noble_names = function(u){
+  ls_names = u %>%
+    read_html() %>%
+    html_nodes("div.mw-category-group") %>%
+    html_text() %>%
+    str_split("\n") %>%
+    unlist()
+  ls_names[sapply(ls_names, str_length)!=1]
+}
+
+ls_noble = lapply(noble_url, noble_names) %>% unlist()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
