@@ -1,8 +1,7 @@
 # Top ----
 setwd("/Users/sunyichi/Documents/GitHub/GoT-Bayesian/")
-
-load("datawithregion.RData")
-d <- read.csv("character-deaths.csv")
+data=readRDS("data1204.rds")
+#d <- read.csv("character-deaths.csv")
 require(randomForest)
 require(ggplot2)
 require(gridExtra)
