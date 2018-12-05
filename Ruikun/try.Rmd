@@ -1,0 +1,133 @@
+---
+title: "TEST"
+author: "Ruikun Xiao"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+# Bayes project
+require(readr)
+require(data.table)
+require(tidyverse)
+library(R2jags)
+merged <- read_rds("updated_data.rds")
+names(merged) # corrected data set with correct gender and nobility
+
+
+# testing prediction capabilities
+merged$region[is.na(merged$region)] <- "Unknown"
+mergedSubset <- subset(merged,select=c(isAlive,gender,Allegiances,isNoble,popularity, 
+                                       region,FirstAppearanceChap)) # temporarily got rid of totalBooks
+set.seed(100)
+train_set = sample(1:nrow(mergedSubset),500)
+test_set = sample(setdiff(1:nrow(mergedSubset),train_set),(849-500))
+GoT_train = merged[train_set,]
+GoT_test = merged[test_set,]
+
+# still using frequentist method
+model1 <- glm(isAlive ~ gender + isNoble + popularity + 
+                FirstAppearanceChap + region,
+              family=binomial(link="logit"), data=GoT_train) # got rid of totalBooks
+summary(model1)
+
+# testing predictions
+pred <- predict(model1, GoT_test, type="response")
+head(pred)
+summary(pred)
+
+# setting threshold for categorizing predicted probabilities
+thresh <- 0.5
+predFac <- cut(pred, breaks=c(-Inf, thresh, Inf), labels=c("Dead","Alive"))
+cTab <- table(GoT_test$isAlive, predFac, dnn=c("actual","predicted"))
+cTab 
+
+# Second method of checking frequentist prediction capabilities:
+mergedSubset <- subset(merged,select=c(isAlive,gender,isNoble,popularity, 
+                                       FirstAppearanceChap,region)) # got rid of totalBooks
+sum(is.na(mergedSubset))
+mergedSubset <- na.omit(mergedSubset) # removed variables where FirstAppearanceChap was NA
+
+p <- 5 # ??
+GoT_data <- list(Y=mergedSubset$isAlive,X=mergedSubset[,2:6],n=nrow(mergedSubset),p=p)
+
+set.seed(100)
+train_set = sample(1:nrow(mergedSubset),500)
+test_set = sample(setdiff(1:nrow(mergedSubset),train_set),(836-500))
+GoT_train = mergedSubset[train_set,]
+GoT_test = mergedSubset[test_set,]
+
+fit_glm = glm(isAlive~ gender + isNoble + popularity + 
+                FirstAppearanceChap,
+              data=GoT_train,family=binomial())
+Y_glm_pred = as.numeric(predict(fit_glm,newdat=GoT_test)>0) 
+
+# install.packages("randomForest")
+# library(randomForest)
+# RF code below is not working
+# rf_fit=randomForest::randomForest(x = GoT_train[,-1],y=as.factor(GoT_train[,1]))
+# rf_pred = predict(rf_fit,newdata = GoT_test[,-1])
+
+
+Y_train = GoT_train$isAlive
+X_train = GoT_train[,c("isAlive","gender","isNoble","popularity",
+                       "FirstAppearanceChap","region")]
+
+Y_test = GoT_test$isAlive
+X_test = GoT_test[,c("isAlive","gender","isNoble","popularity",
+                     "FirstAppearanceChap","region")]
+tab = table(Y_glm_pred,Y_test)
+glm_acc = sum(diag(tab))/sum(tab)
+glm_acc # removed 13 observations with NAs in this method so the predictive accuracy is a little different than previous frequentist analysis
+
+# Bayes logistic regression
+n = length(Y_train)
+n_pred = length(Y_test)
+p <- 5 # ??
+
+# Used non-informative priors
+JAGS_GoT_model = function() {
+  # Likelihood
+  for (i in 1:n) {
+    Y_train[i] ~ dbern(prob[i])
+    logit(prob[i]) <-  beta_0 + inprod(X_train[i,],beta)
+  }
+  #prior
+  beta_0 ~ dnorm(0,0.001)
+  
+  for(j in 1:p){
+    beta[j] ~ dnorm(0,0.001)
+  }
+  #prediction
+  for(i in 1:n_pred){
+    Y_pred[i] ~ dbern(p_pred[i])
+    logit(p_pred[i]) <- beta_0 + inprod(X_test[i,],beta)
+  }
+}
+
+fit_JAGS_GoT_model = jags(
+  data = list(Y_train = Y_train, n=n, X_train=as.matrix(X_train), X_test=as.matrix(X_test),n_pred=n_pred,p=ncol(X_train)),
+  inits = list(list(Y_pred=rep(0,length=n_pred),beta_0 = 0,beta=c(0,0,0,0,0))),
+  parameters.to.save = c("Y_pred"),
+  n.chains = 1,
+  n.iter = 10000,
+  n.burnin = 2000,
+  model.file = JAGS_GoT_model
+)
+
+# testing prediction capabilities without char_reg included
+pred_prob <- summary(as.mcmc(fit_JAGS_GoT_model))$statistics[paste("Y_pred[",1:n_pred,"]",sep=""),1]
+Y_pred = as.numeric(pred_prob>0.5)
+tab=table(Y_pred,Y_test)
+Bayes_acc=sum(diag(tab))/sum(tab)
+Bayes_acc
+```
