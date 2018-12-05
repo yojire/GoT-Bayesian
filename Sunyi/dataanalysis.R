@@ -25,7 +25,7 @@ confusionMatrix(pdrf,as.factor(ts$DwD))
 data = d
 # Some of the data is wrong, fixes:
 # Cressen is intro'd and dies in book 2
-data$`Book of Death`[147] = 2
+#data$`Book of Death`[147] = 2
 
 
 # add on 1 to the death chapter number and intro chapter number, for prologues.
