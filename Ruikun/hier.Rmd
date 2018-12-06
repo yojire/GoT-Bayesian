@@ -1,0 +1,117 @@
+---
+title: "Untitled"
+author: "Ruikun Xiao"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pacman::p_load(readr, data.table, tidyverse, R2jags)
+reshaped = read_rds("reshaped.rds")
+reshaped = na.omit(reshaped)
+
+set.seed(100)
+train_set = sample(1:nrow(reshaped),500)
+test_set = sample(setdiff(1:nrow(reshaped),train_set),(nrow(reshaped)-500))
+GoT_train = reshaped[train_set,]
+GoT_test = reshaped[test_set,]
+
+var_order = c(4,8,2,7,11,21:23,20,10,15,17,9,16,20,19,12,14,13)
+
+Y_train = GoT_train$isAlive
+X_train = GoT_train[,c(4,8,2,7,11,21:23,10,15,17,9,16,20,19,12,14,13)]
+Y_test = GoT_test$isAlive
+X_test = GoT_test[,c(4,8,2,7,11,21:23,10,15,17,9,16,20,19,12,14,13)]
+
+n = length(Y_train)
+n_pred = length(Y_test)
+
+JAGS_GoT_model = function() {
+  # Likelihood
+  for (i in 1:n) {
+    Y_train[i] ~ dbern(prob[i])
+    logit(prob[i]) <-  beta_0 + inprod(X_train[i,],beta)
+  }
+  #prior
+  beta_0 ~ dnorm(0,0.001)
+  
+  for(j in 1:8){
+    beta[j] ~ dnorm(0,0.001)
+  }
+  
+  for(k in 1:3){
+    alpha[k] ~ dnorm(0, 0.001)
+  }
+  
+  for(j in 9:11){
+    beta[j] ~ dnorm(0, alpha[1])
+  }
+  
+  for(j in 12:16){
+    beta[j] ~ dnorm(0, alpha[2])
+  }
+  
+  for(j in 17:18){
+    beta[j] ~ dnorm(0, alpha[3])
+  }
+  
+  #prediction
+  for(i in 1:n_pred){
+    Y_pred[i] ~ dbern(p_pred[i])
+    logit(p_pred[i]) <- beta_0 + inprod(X_test[i,],beta)
+  }
+}
+
+fit_JAGS_GoT_model = jags(
+  data = list(Y_train = Y_train, n=n, X_train=as.matrix(X_train), X_test=as.matrix(X_test),n_pred=n_pred,p=ncol(X_train)),
+  inits = list(list(Y_pred=rep(0,length=n_pred),beta_0 = 0,beta=rep(0,18),alpha=rep(1,3))),
+  parameters.to.save = c("Y_pred"),
+  n.chains = 1,
+  n.iter = 10000,
+  n.burnin = 2000,
+  model.file = JAGS_GoT_model
+)
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
