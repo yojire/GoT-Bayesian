@@ -6,6 +6,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(R2jags)
 ```
 
 ## R Markdown
@@ -19,7 +20,6 @@ When you click the **Knit** button a document will be generated that includes bo
 require(readr)
 require(data.table)
 require(tidyverse)
-library(R2jags)
 merged <- read_rds("updated_data.rds")
 names(merged) # corrected data set with correct gender and nobility
 
@@ -56,6 +56,7 @@ mergedSubset <- subset(merged,select=c(isAlive,gender,isNoble,popularity,
                                        FirstAppearanceChap,region)) # got rid of totalBooks
 sum(is.na(mergedSubset))
 mergedSubset <- na.omit(mergedSubset) # removed variables where FirstAppearanceChap was NA
+mergedSubset$region = factor(mergedSubset$region)
 
 p <- 5 # ??
 GoT_data <- list(Y=mergedSubset$isAlive,X=mergedSubset[,2:6],n=nrow(mergedSubset),p=p)
@@ -79,11 +80,11 @@ Y_glm_pred = as.numeric(predict(fit_glm,newdat=GoT_test)>0)
 
 
 Y_train = GoT_train$isAlive
-X_train = GoT_train[,c("isAlive","gender","isNoble","popularity",
+X_train = GoT_train[,c("gender","isNoble","popularity",
                        "FirstAppearanceChap","region")]
 
 Y_test = GoT_test$isAlive
-X_test = GoT_test[,c("isAlive","gender","isNoble","popularity",
+X_test = GoT_test[,c("gender","isNoble","popularity",
                      "FirstAppearanceChap","region")]
 tab = table(Y_glm_pred,Y_test)
 glm_acc = sum(diag(tab))/sum(tab)
@@ -130,4 +131,25 @@ Y_pred = as.numeric(pred_prob>0.5)
 tab=table(Y_pred,Y_test)
 Bayes_acc=sum(diag(tab))/sum(tab)
 Bayes_acc
+
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
