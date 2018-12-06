@@ -43,19 +43,19 @@ JAGS_GoT_model = function() {
   }
   
   for(k in 1:3){
-    alpha[k] ~ dnorm(0, 0.001)
+    alpha[k] ~ dgamma(0.1, 0.1)
   }
   
   for(j in 9:11){
-    beta[j] ~ dnorm(0, alpha[1])
+    beta[j] ~ dnorm(0, 1/alpha[1])
   }
   
   for(j in 12:16){
-    beta[j] ~ dnorm(0, alpha[2])
+    beta[j] ~ dnorm(0, 1/alpha[2])
   }
   
   for(j in 17:18){
-    beta[j] ~ dnorm(0, alpha[3])
+    beta[j] ~ dnorm(0, 1/alpha[3])
   }
   
   #prediction
@@ -66,17 +66,14 @@ JAGS_GoT_model = function() {
 }
 
 fit_JAGS_GoT_model = jags(
-  data = list(Y_train = Y_train, n=n, X_train=as.matrix(X_train), X_test=as.matrix(X_test),n_pred=n_pred,p=ncol(X_train)),
-  inits = list(list(Y_pred=rep(0,length=n_pred),beta_0 = 0,beta=rep(0,18),alpha=rep(1,3))),
+  data = list(Y_train = Y_train, n=n, X_train=as.matrix(X_train), X_test=as.matrix(X_test),n_pred=n_pred),
+  inits = list(list(Y_pred=rep(0,length=n_pred),beta_0 = 0,beta=rep(0,18))),
   parameters.to.save = c("Y_pred"),
   n.chains = 1,
   n.iter = 10000,
   n.burnin = 2000,
   model.file = JAGS_GoT_model
 )
-
-
-
 
 
 
