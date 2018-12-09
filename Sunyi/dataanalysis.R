@@ -1,13 +1,13 @@
 # Top ----
-setwd("/Users/sunyichi/Documents/GitHub/GoT-Bayesian/")
-data=readRDS("data1204.rds")
-#d <- read.csv("character-deaths.csv")
+setwd("/Users/sunyichi/Documents/GitHub/GoT-Bayesian/Sunyi")
+#data=readRDS("reduceddata1204.rds")
+d <- read.csv("character-deaths.csv")
 require(randomForest)
 require(ggplot2)
 require(gridExtra)
 require(caret)
 library(MASS)
-d=data
+#d=data
 
 # try classification ----
 set.seed(2017)
@@ -25,12 +25,12 @@ confusionMatrix(pdrf,as.factor(ts$DwD))
 data = d
 # Some of the data is wrong, fixes:
 # Cressen is intro'd and dies in book 2
-#data$`Book of Death`[147] = 2
+#data$`Book.of.Death`[157] = 2
 
 
 # add on 1 to the death chapter number and intro chapter number, for prologues.
-data$`Book Intro Chapter` = data$`Book Intro Chapter` + 1
-data$`Death Chapter` = data$`Death Chapter` + 1
+data$`Book.Intro.Chapter` = data$`Book.Intro.Chapter` + 1
+data$`Death.Chapter` = data$`Death.Chapter` + 1
 
 
 # Make a book intro variable
@@ -48,7 +48,7 @@ data$Book.of.Intro[X4] = 4
 data$Book.of.Intro[X5] = 5
 
 # these are the characters that die in the same book they're introduced.
-Same_book_death = which(data$Book.of.Intro == data$`Book of Death`)
+Same_book_death = which(data$Book.of.Intro == data$`Book.of.Death`)
 Dies_same_book_1 = sum(data$Book.of.Intro[Same_book_death] == 1)
 Dies_same_book_2 = sum(data$Book.of.Intro[Same_book_death] == 2)
 Dies_same_book_3 = sum(data$Book.of.Intro[Same_book_death] == 3)
@@ -74,15 +74,15 @@ book4chap = 46
 book5chap = 73
 data$Chapters_featured = data$GoT*book1chap + data$CoK*book2chap + data$SoS*book3chap + data$FfC*book4chap + data$DwD*book5chap
 # subtract the chapters before a character appears in GoT
-data$Chapters_featured[X1] = data$Chapters_featured[X1] - data$`Book Intro Chapter`[X1] + 1
-data$Chapters_featured[X2] = data$Chapters_featured[X2] - data$`Book Intro Chapter`[X2] + 1 
-data$Chapters_featured[X3] = data$Chapters_featured[X3] - data$`Book Intro Chapter`[X3] + 1
-data$Chapters_featured[X4] = data$Chapters_featured[X4] - data$`Book Intro Chapter`[X4] + 1
-data$Chapters_featured[X5] = data$Chapters_featured[X5] - data$`Book Intro Chapter`[X5] + 1
+data$Chapters_featured[X1] = data$Chapters_featured[X1] - data$`Book.Intro.Chapter`[X1] + 1
+data$Chapters_featured[X2] = data$Chapters_featured[X2] - data$`Book.Intro.Chapter`[X2] + 1 
+data$Chapters_featured[X3] = data$Chapters_featured[X3] - data$`Book.Intro.Chapter`[X3] + 1
+data$Chapters_featured[X4] = data$Chapters_featured[X4] - data$`Book.Intro.Chapter`[X4] + 1
+data$Chapters_featured[X5] = data$Chapters_featured[X5] - data$`Book.Intro.Chapter`[X5] + 1
 
-data$Death.Chapter2 = data$`Death Chapter`
-data$Death.Chapter2[is.na(data$`Death Chapter`)] = 0
-Not_Dead = is.na(data$`Death Chapter`)
+data$Death.Chapter2 = data$`Death.Chapter`
+data$Death.Chapter2[is.na(data$`Death.Chapter`)] = 0
+Not_Dead = is.na(data$`Death.Chapter`)
 Isnt_Dead = sum(Not_Dead)
 #618 not dead yet
 
@@ -91,11 +91,11 @@ Isnt_Dead = sum(Not_Dead)
 
 data$In_Book = data$Chapters_featured
 
-D1 = which(data$`Book of Death` == 1 & !is.na(data$`Death Chapter`))
-D2 = which(data$`Book of Death` == 2 & !is.na(data$`Death Chapter`))
-D3 = which(data$`Book of Death` == 3 & !is.na(data$`Death Chapter`))
-D4 = which(data$`Book of Death` == 4 & !is.na(data$`Death Chapter`))
-D5 = which(data$`Book of Death` == 5 & !is.na(data$`Death Chapter`))
+D1 = which(data$`Book.of.Death` == 1 & !is.na(data$`Death.Chapter`))
+D2 = which(data$`Book.of.Death` == 2 & !is.na(data$`Death.Chapter`))
+D3 = which(data$`Book.of.Death` == 3 & !is.na(data$`Death.Chapter`))
+D4 = which(data$`Book.of.Death` == 4 & !is.na(data$`Death.Chapter`))
+D5 = which(data$`Book.of.Death` == 5 & !is.na(data$`Death.Chapter`))
 
 data$In_Book[D1] = data$Chapters_featured[D1] - (73 - data$Death.Chapter2[D1]) 
 data$In_Book[D2] = data$Chapters_featured[D2] - (70 - data$Death.Chapter2[D2])
@@ -105,8 +105,9 @@ data$In_Book[D5] = data$Chapters_featured[D5] - (73 - data$Death.Chapter2[D5])
 
 negative<-c(which(data$In_Book < 0),which(is.na(data$In_Book)))
 data$Name[which(data$In_Book < 0)]
-hist(data$In_Book[-negative], breaks = 50, main = "Chapters Surviving in Book", xlab= "# of chapters")
 
+hist(data$In_Book[-negative], breaks = 50, main="",xlab= "number of chapters",ylab="number of characters")
+curve
 
 ###chapters introduced 
 colnames(data)[6] <- "Book.Intro.Chapter"
@@ -145,14 +146,14 @@ ll.weibull<-function(dat,par){
 }
 weibull.optim <- optim(par=c(log(1/2.2),12),fn=ll.weibull,dat=data$In_Book[-negative])
 
-
+a=data$In_Book[-negative]-1
 g = function(x){
-  return(dweibull(x,shape = 1.8,scale = 1.5))
+  return(dweibull(x,shape = 1,scale = 5))
 }
-ggplot(data.frame(x = data$In_Book),aes(x=x)) + 
+ggplot(data.frame(x = a),aes(x=x)) + 
   geom_histogram(aes(y=..density..),binwidth=1) +
   stat_function(fun = g, colour = "red",n=10000)+
-  ggtitle("Density of Weibull with shape 1.75 and scale 1.5")+xlim(c(0,10))
+  ggtitle("Density of Weibull with shape 1.75 and scale 1.5")+xlim(c(-1,200))
 
 p1=ggplot(data.frame(x = data$In_Book),aes(x=x)) + 
   geom_histogram(aes(y=..density..),binwidth=4) +

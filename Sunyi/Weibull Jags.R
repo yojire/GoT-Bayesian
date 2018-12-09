@@ -5,52 +5,39 @@ data=readRDS("data1204.rds")
 require(rjags)
 negative<-c(which(data$In_Book < 0),which(is.na(data$In_Book)))
 data=data[-negative,]
-prior_model_Weibull = "model{
-for (i in 1:N){
-In_Book[i] ~ dweib(alpha,beta)
+data[is.na(data$gender),4]=c(1,1)
+N= length(data$In_Book)
+
+library(R2jags)
+set.seed(1)
+JAGS_RE_model=function(){
+  #Likelihood
+  for (i in 1:N){
+    In_Book[i] ~ dweib(shape,lambda[i])
+    lambda[i] <- exp(-mu[i] * shape)
+    mu[i]<-beta0+beta1*popularity[i]+beta2*gender[i]+beta3*noble[i]
+  }
+  #Priors
+  shape ~ dgamma(.001, .001)
+  beta0~dnorm(1,0.001)  #most characters only love for one chapters
+    beta1~dnorm(0,0.001)
+    beta2~dnorm(0,0.001)
+    beta3~dnorm(0,0.001)
+  #Output
+   # theta <- pow(-log(0.5)/theta,1/alpha)
+   # lambda <- exp(-theta*pow(271,alpha))
+  #for (i in 1:N){
+  #  pred[i]<-beta0+beta1*popularity[i]+beta2*gender[i]+beta3*noble[i]
+  #} 
 }
-alpha ~ dunif(0,100)
-beta ~ dunif(0,100)
+fit_JAGS_RE_model = jags(data = list('N'= length(data$In_Book),'In_Book' = data$In_Book,'popularity'=data$popularity,'gender'=data$gender,'noble'=data$noble),
+  parameters.to.save = c("shape","beta0","beta1","beta2","beta3"),
+  n.chains = 3,model.file = JAGS_RE_model)
 
-theta <- pow(-log(0.5)/beta,1/alpha)
-lambda <- exp(-beta*pow(271,alpha))
-}"
-
-prior_model.con_W<-textConnection(prior_model_Weibull)
-
-data$In_Book_15 = as.integer(data$In_Book)
-N_15 = length(data$In_Book)
-jags15 = jags.model(prior_model.con_W, n.chains = 3, n.adapt = 200, data = list('In_Book' = data$In_Book_15, 'N' = N_15))
-sample15 = coda.samples(jags15, c("alpha","beta","theta", "lambda"), 10000)
-#quartz()
-plot(sample15, trace = FALSE)
-summary(sample15)
-gelman.diag(sample15) # Gelman and Rubin Convergence Diagnostic
-#quartz()
-gelman.plot(sample15)
+library(lattice)
+densityplot(as.mcmc(fit_JAGS_RE_model))
 
 
+gelman.diag(as.mcmc(fit_JAGS_RE_model))
+gelman.plot(as.mcmc(fit_JAGS_RE_model))
 
-prior_model_Weibull = "model{
-for (i in 1:N){
-In_Book[i] ~ dweib(alpha,beta)
-}
-alpha ~ dunif(0,100)
-beta ~ dunif(0,100)
-
-theta <- pow(-log(0.5)/beta,1/alpha)
-lambda <- exp(-beta*pow(150,alpha))
-}"
-
-prior_model.con_W<-textConnection(prior_model_Weibull)
-
-In_Book_14 = as.integer(data2$In_Book)
-N_14 = length(data2$In_Book)
-jags14 = jags.model(prior_model.con_W, n.chains = 3, n.adapt = 200, data = list('In_Book' = In_Book_14, 'N' = N_14))
-sample14 = coda.samples(jags14, c("alpha","beta", "theta", "lambda"), 10000)
-#quartz()
-plot(sample14, trace = FALSE)
-summary(sample14)
-gelman.diag(sample14) # Gelman and Rubin Convergence Diagnostic
-#quartz()
-gelman.plot(sample14)
