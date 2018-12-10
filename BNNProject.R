@@ -9,7 +9,9 @@ library(lattice)
 merged <- read_rds("/Users/briannaking/Downloads/reshaped.rds")
 
 merged <- na.omit(merged)
-X <- merged[,c("FirstAppearanceChap","gender","Essos")]
+GoT_data <- list(Y=merged$isAlive,X=merged[,c("popularity","gender","FirstAppearanceChap","noble","Essos")],n=nrow(merged))
+
+X <- merged[,c("FirstAppearanceChap","gender","Essos","popularity","noble")]
 Y <- merged$isAlive
 n = length(Y)
 
@@ -18,10 +20,10 @@ set.seed(100)
 n_train = 500
 idx_train = sample(1:n,n_train)
 idx_test = setdiff(1:n, idx_train)
-X_train = X[idx_train]
+X_train = X[idx_train,]
 Y_train = Y[idx_train]
 
-X_test = X[idx_test]
+X_test = X[idx_test,]
 Y_test = Y[idx_test]
 
 # Bayesian Neural Network
@@ -138,7 +140,9 @@ print(res_q5$fit.JAGS)
 plot(res_q5$fit.JAGS) 
 #as an mcmc object
 fit.JAGS.mcmc = as.mcmc(res_q5$fit.JAGS)
-plot(fit.JAGS.mcmc,ask=TRUE) # convergence plot doesn't look right
+fit.JAGS.mcmc = as.mcmc(res_q5$fit.JAGS)
+a <- geweke.diag(fit.JAGS.mcmc) # ask Jian if this can be used for logistic model convergence (all of the Z values have an absolute value smaller than 2)
+plot(fit.JAGS.mcmc,ask=TRUE)
 #directly traceplot
 traceplot(res_q5$fit.JAGS)
 traceplot(res_q5$fit.JAGS,mfrow=c(2,3),ask=FALSE)
@@ -189,3 +193,102 @@ cTab # prediction accuracy with everything in model except south_region, north_r
 # Comparison: if our model predicted everyone to be alive, we'd have 73.8% accuracy
 # our models aren't that great because they're not much better than predicting everyone to be alive
 # but the Bayesian neural network model is doing better than glm
+
+# Attempting cross validation
+##### Cross Validation #####
+
+cv_index_split = function(n, fold = 5, random = TRUE) {
+  all_indices = 1:n
+  cv_idx = list()
+  n_test = floor(n / fold)
+  test_idx_pool = all_indices
+  for (k in 1:fold) {
+    if (length(test_idx_pool) > n_test) {
+      if (random == TRUE)
+        test_idx = sample(test_idx_pool, n_test)
+      else
+        test_idx = (k - 1) * n_test + 1:n_test
+      test_idx_pool = setdiff(test_idx_pool, test_idx)
+    }
+    else{
+      test_idx = test_idx_pool
+    }
+    cv_idx[[k]] = list(test_idx = test_idx,
+                       train_idx = setdiff(all_indices, test_idx))
+  }
+  return(cv_idx)
+}
+
+JAGS_GOT_pred = function() {
+  # Likelihood
+  for (i in 1:n_train) {
+    Y_train[i] ~ dbern(prob[i])
+    logit(prob[i]) <-  beta00 + inprod(Z_train[i,],beta01)
+    for(l in 1:q){
+      logit(Z_train[i,l]) <-  beta10[l] + inprod(X_train[i,],beta11[l,])
+    }
+  }
+  #prior
+  beta00 ~ dnorm(0,0.001)
+  
+  for(l in 1:q){
+    beta01[l] ~ dnorm(0,0.001)
+  }
+  
+  for(l in 1:q){
+    for(j in 1:p){
+      beta11[l,j] ~ dnorm(0,0.001)
+    }
+    beta10[l] ~ dnorm(0,0.001)
+  }
+  
+  #prediction
+  for(i in 1:n_pred){
+    Y_pred[i] ~ dbern(p_pred[i])
+    logit(p_pred[i]) <- beta00 + inprod(Z_train_pred[i,],beta01)
+    for(l in 1:q){
+      logit(Z_train_pred[i,l]) <-  beta10[l] + inprod(X_test[i,],beta11[l,])
+    }
+  }
+}
+
+##### directly implement cross validation
+fold = 5
+q = 5L
+set.seed(27)
+cv_idx = cv_index_split(GoT_data$n, fold = 5)
+CV_MSE = list()
+CV_MSE$BNN = rep(NA, length = fold)
+
+for (k in 1:fold) {
+  train_idx  = cv_idx[[k]]$train_idx
+  n_train = length(train_idx)
+  test_idx  = cv_idx[[k]]$test_idx
+  n_test = length(test_idx)
+  
+  fit_JAGS = jags(
+    data = list(
+      Y = GoT_data$Y[train_idx],
+      X = GoT_data$X[train_idx],
+      X_pred = GoT_data$X[test_idx],
+      n = n_train,
+      n_pred = n_test
+    ),
+    parameters.to.save = c("Y_pred"),
+    n.chains = 1,
+    n.iter = 10000,
+    n.burnin = 1000,
+    model.file = Bayes_1L_NN
+  )
+  
+  Y_pred = apply(as.mcmc(fit_JAGS)[[1]][, paste("Y_pred[", 1:n_test, "]", sep =
+                                                  "")], 2, mean)
+  CV_MSE$BNN[k] =  mean((Y_pred - GoT_data$Y[test_idx]) ^ 2)
+}
+apply(as.data.frame(CV_MSE), 2, mean)
+
+
+# attempting ROC curve
+library(pROC)
+plot(roc(res_q5$Y_pred,Y_test,direction=">"))
+ 
