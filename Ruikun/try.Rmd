@@ -17,10 +17,9 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r}
 # Bayes project
-require(readr)
-require(data.table)
-require(tidyverse)
+pacman::p_load(readr, data.table, tidyverse)
 merged <- read_rds("updated_data.rds")
+reshaped <- read_rds("reshaped.rds")
 names(merged) # corrected data set with correct gender and nobility
 
 
@@ -131,12 +130,13 @@ Y_pred = as.numeric(pred_prob>0.5)
 tab=table(Y_pred,Y_test)
 Bayes_acc=sum(diag(tab))/sum(tab)
 Bayes_acc
-
-
 ```
 
 
 
+```{r}
+
+```
 
 
 

@@ -75,7 +75,13 @@ fit_JAGS_GoT_model = jags(
   model.file = JAGS_GoT_model
 )
 
+print(fit_JAGS_GoT_model)
 
+pred_prob <- summary(as.mcmc(fit_JAGS_GoT_model))$statistics[paste("Y_pred[",1:n_pred,"]",sep=""),1]
+Y_pred = as.numeric(pred_prob>0.5)
+tab=table(Y_pred,Y_test)
+Bayes_acc=sum(diag(tab))/sum(tab)
+Bayes_acc
 
 
 ```
